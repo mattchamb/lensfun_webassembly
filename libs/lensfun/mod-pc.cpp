@@ -548,7 +548,6 @@ bool lfModifier::EnablePerspectiveCorrection (float *x, float *y, int count, flo
 {
     if (Reverse)
     {
-        g_warning ("[Lensfun] reverse perspective correction is not yet implemented\n");
         return false;
     }
     const int number_of_control_points = count;
@@ -576,7 +575,6 @@ bool lfModifier::EnablePerspectiveCorrection (float *x, float *y, int count, flo
     }
     catch (svd_no_convergence &e)
     {
-        g_warning ("[Lensfun] %s", e.what());
         return false;
     }
 

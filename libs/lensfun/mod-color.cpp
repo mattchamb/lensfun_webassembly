@@ -86,11 +86,6 @@ bool lfModifier::AddColorCallbackVignetting (
                         break;
 
                     case LF_PF_U16:
-#ifdef VECTORIZATION_SSE2
-                        if (_lf_detect_cpu_features () & LF_CPU_FLAG_SSE2)
-                            ADD_CALLBACK (ModifyColor_DeVignetting_PA_SSE2, lf_u16, 750);
-                        else
-#endif
                         ADD_CALLBACK (ModifyColor_DeVignetting_PA, lf_u16, 750);
                         break;
 
@@ -99,11 +94,6 @@ bool lfModifier::AddColorCallbackVignetting (
                         break;
 
                     case LF_PF_F32:
-#ifdef VECTORIZATION_SSE
-                        if (_lf_detect_cpu_features () & LF_CPU_FLAG_SSE)
-                            ADD_CALLBACK (ModifyColor_DeVignetting_PA_SSE, lf_f32, 750);
-                        else
-#endif
                         ADD_CALLBACK (ModifyColor_DeVignetting_PA, lf_f32, 750);
                         break;
 
@@ -128,7 +118,8 @@ bool lfModifier::AddColorCallbackVignetting (
 bool lfModifier::ApplyColorModification (
     void *pixels, float x, float y, int width, int height, int comp_role, int row_stride) const
 {
-    if (((GPtrArray *)ColorCallbacks)->len <= 0 || height <= 0)
+    std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)ColorCallbacks;
+    if (callbacks->size <= 0 || height <= 0)
         return false; // nothing to do
 
     x = x * NormScale - CenterX;
@@ -136,10 +127,9 @@ bool lfModifier::ApplyColorModification (
 
     for (; height; y += NormScale, height--)
     {
-        for (int i = 0; i < (int)((GPtrArray *)ColorCallbacks)->len; i++)
+        for (int i = 0; i < callbacks->size; i++)
         {
-            lfColorCallbackData *cd =
-                (lfColorCallbackData *)g_ptr_array_index ((GPtrArray *)ColorCallbacks, i);
+            lfColorCallbackData *cd = (lfColorCallbackData*)callbacks->at(i);
             cd->callback (cd->data, x, y, pixels, comp_role, width);
         }
         pixels = ((char *)pixels) + row_stride;
@@ -185,8 +175,8 @@ template<typename T>static inline T *apply_multiplier (T *pixels, double c, int 
     return pixels;
 }
 
-inline guint clampbits (gint x, guint n)
-{ guint32 _y_temp; if ((_y_temp = x >> n)) x = ~_y_temp >> (32 - n); return x; }
+inline unsigned int clampbits (int x, int n)
+{ unsigned int _y_temp; if ((_y_temp = x >> n)) x = ~_y_temp >> (32 - n); return x; }
 
 // For lf_u8 pixel type do a more efficient arithmetic using fixed point
 template<>inline lf_u8 *apply_multiplier (lf_u8 *pixels, double c, int &cr)

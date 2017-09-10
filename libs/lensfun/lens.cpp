@@ -8,12 +8,14 @@
 #include "lensfunprv.h"
 #include <limits.h>
 #include <stdlib.h>
-#include <regex.h>
+#include "../../include/regex/regex.h"
 #include <string.h>
 #include <locale.h>
 #include <math.h>
 #include "windows/mathconstants.h"
 #include <algorithm>
+
+typedef unsigned char guchar;
 
 static struct
 {
@@ -1024,8 +1026,6 @@ bool lfLens::InterpolateDistortion (float focal, lfLensCalibDistortion &res) con
             dm = c->Model;
         else if (dm != c->Model)
         {
-            g_warning ("[Lensfun] lens %s/%s has multiple distortion models defined\n",
-                       Maker, Model);
             continue;
         }
 
@@ -1103,8 +1103,6 @@ bool lfLens::InterpolateTCA (float focal, lfLensCalibTCA &res) const
             tcam = c->Model;
         else if (tcam != c->Model)
         {
-            g_warning ("[Lensfun] lens %s/%s has multiple TCA models defined\n",
-                       Maker, Model);
             continue;
         }
 
@@ -1204,8 +1202,6 @@ bool lfLens::InterpolateVignetting (
         } 
         else if (vm != c->Model)
         {
-            g_warning ("[Lensfun] lens %s/%s has multiple vignetting models defined\n",
-                       Maker, Model);
             continue;
         }
 
@@ -1267,8 +1263,6 @@ bool lfLens::InterpolateCrop (float focal, lfLensCalibCrop &res) const
             cm = c->CropMode;
         else if (cm != c->CropMode)
         {
-            g_warning ("[Lensfun] lens %s/%s has multiple crop modes defined\n",
-                       Maker, Model);
             continue;
         }
 
@@ -1371,7 +1365,7 @@ bool lfLens::InterpolateFov (float focal, lfLensCalibFov &res) const
     return true;
 }
 
-gint _lf_lens_parameters_compare (const lfLens *i1, const lfLens *i2)
+int _lf_lens_parameters_compare (const lfLens *i1, const lfLens *i2)
 {
     int cmp = int ((i1->MinFocal - i2->MinFocal) * 100);
     if (cmp != 0)
@@ -1387,27 +1381,6 @@ gint _lf_lens_parameters_compare (const lfLens *i1, const lfLens *i2)
     // so it's a guessed value, often incorrect.
 }
 
-gint _lf_lens_name_compare (const lfLens *i1, const lfLens *i2)
-{
-    int cmp = _lf_strcmp (i1->Maker, i2->Maker);
-    if (cmp != 0)
-        return cmp;
-
-    return _lf_strcmp (i1->Model, i2->Model);
-}
-
-gint _lf_lens_compare (gconstpointer a, gconstpointer b)
-{
-    lfLens *i1 = (lfLens *)a;
-    lfLens *i2 = (lfLens *)b;
-
-    int cmp = _lf_lens_name_compare (i1, i2);
-    if (cmp != 0)
-        return cmp;
-
-    return int ((i1->CropFactor - i2->CropFactor) * 100);
-}
-
 static int _lf_compare_num (float a, float b)
 {
     if (!a || !b)
@@ -1419,141 +1392,141 @@ static int _lf_compare_num (float a, float b)
     return +1; // strong yes
 }
 
-int _lf_lens_compare_score (const lfLens *pattern, const lfLens *match,
-                            lfFuzzyStrCmp *fuzzycmp, const char **compat_mounts)
-{
-    int score = 0;
+// int _lf_lens_compare_score (const lfLens *pattern, const lfLens *match,
+//                             lfFuzzyStrCmp *fuzzycmp, const char **compat_mounts)
+// {
+//     int score = 0;
 
-    // Compare numeric fields first since that's easy.
+//     // Compare numeric fields first since that's easy.
 
-    if (pattern->Type != LF_UNKNOWN)
-        if (pattern->Type != match->Type)
-            return 0;
+//     if (pattern->Type != LF_UNKNOWN)
+//         if (pattern->Type != match->Type)
+//             return 0;
 
-    if (pattern->CropFactor > 0.01 && pattern->CropFactor < match->CropFactor * 0.96)
-        return 0;
+//     if (pattern->CropFactor > 0.01 && pattern->CropFactor < match->CropFactor * 0.96)
+//         return 0;
 
-    if (pattern->CropFactor >= match->CropFactor * 1.41)
-        score += 2;
-    else if (pattern->CropFactor >= match->CropFactor * 1.31)
-        score += 4;
-    else if (pattern->CropFactor >= match->CropFactor * 1.21)
-        score += 6;
-    else if (pattern->CropFactor >= match->CropFactor * 1.11)
-        score += 8;
-    else if (pattern->CropFactor >= match->CropFactor * 1.01)
-        score += 10;
-    else if (pattern->CropFactor >= match->CropFactor)
-        score += 5;
-    else if (pattern->CropFactor >= match->CropFactor * 0.96)
-        score += 3;
+//     if (pattern->CropFactor >= match->CropFactor * 1.41)
+//         score += 2;
+//     else if (pattern->CropFactor >= match->CropFactor * 1.31)
+//         score += 4;
+//     else if (pattern->CropFactor >= match->CropFactor * 1.21)
+//         score += 6;
+//     else if (pattern->CropFactor >= match->CropFactor * 1.11)
+//         score += 8;
+//     else if (pattern->CropFactor >= match->CropFactor * 1.01)
+//         score += 10;
+//     else if (pattern->CropFactor >= match->CropFactor)
+//         score += 5;
+//     else if (pattern->CropFactor >= match->CropFactor * 0.96)
+//         score += 3;
 
-    switch (_lf_compare_num (pattern->MinFocal, match->MinFocal))
-    {
-        case -1:
-            return 0;
+//     switch (_lf_compare_num (pattern->MinFocal, match->MinFocal))
+//     {
+//         case -1:
+//             return 0;
 
-        case +1:
-            score += 10;
-            break;
-    }
+//         case +1:
+//             score += 10;
+//             break;
+//     }
 
-    switch (_lf_compare_num (pattern->MaxFocal, match->MaxFocal))
-    {
-        case -1:
-            return 0;
+//     switch (_lf_compare_num (pattern->MaxFocal, match->MaxFocal))
+//     {
+//         case -1:
+//             return 0;
 
-        case +1:
-            score += 10;
-            break;
-    }
+//         case +1:
+//             score += 10;
+//             break;
+//     }
 
-    switch (_lf_compare_num (pattern->MinAperture, match->MinAperture))
-    {
-        case -1:
-            return 0;
+//     switch (_lf_compare_num (pattern->MinAperture, match->MinAperture))
+//     {
+//         case -1:
+//             return 0;
 
-        case +1:
-            score += 10;
-            break;
-    }
+//         case +1:
+//             score += 10;
+//             break;
+//     }
 
-    switch (_lf_compare_num (pattern->MaxAperture, match->MaxAperture))
-    {
-        case -1:
-            return 0;
+//     switch (_lf_compare_num (pattern->MaxAperture, match->MaxAperture))
+//     {
+//         case -1:
+//             return 0;
 
-        case +1:
-            score += 10;
-            break;
-    }
+//         case +1:
+//             score += 10;
+//             break;
+//     }
 
-    switch (_lf_compare_num (pattern->AspectRatio, match->AspectRatio))
-    {
-        case -1:
-            return 0;
+//     switch (_lf_compare_num (pattern->AspectRatio, match->AspectRatio))
+//     {
+//         case -1:
+//             return 0;
 
-        case +1:
-            score += 10;
-            break;
-    }
+//         case +1:
+//             score += 10;
+//             break;
+//     }
 
-    if (compat_mounts && !compat_mounts [0])
-        compat_mounts = NULL;
+//     if (compat_mounts && !compat_mounts [0])
+//         compat_mounts = NULL;
 
-    // Check the lens mount, if specified
-    if (match->Mounts && (pattern->Mounts || compat_mounts))
-    {
-        bool matching_mount_found = false;
+//     // Check the lens mount, if specified
+//     if (match->Mounts && (pattern->Mounts || compat_mounts))
+//     {
+//         bool matching_mount_found = false;
 
-        if (pattern->Mounts)
-            for (int i = 0; pattern->Mounts [i]; i++)
-                for (int j = 0; match->Mounts [j]; j++)
-                    if (!_lf_strcmp (pattern->Mounts [i], match->Mounts [j]))
-                    {
-                        matching_mount_found = true;
-                        score += 10;
-                        goto exit_mount_search;
-                    }
+//         if (pattern->Mounts)
+//             for (int i = 0; pattern->Mounts [i]; i++)
+//                 for (int j = 0; match->Mounts [j]; j++)
+//                     if (!_lf_strcmp (pattern->Mounts [i], match->Mounts [j]))
+//                     {
+//                         matching_mount_found = true;
+//                         score += 10;
+//                         goto exit_mount_search;
+//                     }
 
-        if (compat_mounts)
-            for (int i = 0; compat_mounts [i]; i++)
-                for (int j = 0; match->Mounts [j]; j++)
-                    if (!_lf_strcmp (compat_mounts [i], match->Mounts [j]))
-                    {
-                        matching_mount_found = true;
-                        score += 9;
-                        goto exit_mount_search;
-                    }
+//         if (compat_mounts)
+//             for (int i = 0; compat_mounts [i]; i++)
+//                 for (int j = 0; match->Mounts [j]; j++)
+//                     if (!_lf_strcmp (compat_mounts [i], match->Mounts [j]))
+//                     {
+//                         matching_mount_found = true;
+//                         score += 9;
+//                         goto exit_mount_search;
+//                     }
 
-    exit_mount_search:
-        if (!matching_mount_found)
-            return 0;
-    }
+//     exit_mount_search:
+//         if (!matching_mount_found)
+//             return 0;
+//     }
 
-    // If maker is specified, check it using our patented _lf_strcmp(tm) technology
-    if (pattern->Maker && match->Maker)
-    {
-        if (_lf_mlstrcmp (pattern->Maker, match->Maker) != 0)
-            return 0; // Bah! different maker.
-        else
-            score += 10; // Good doggy, here's a cookie
-    }
+//     // If maker is specified, check it using our patented _lf_strcmp(tm) technology
+//     if (pattern->Maker && match->Maker)
+//     {
+//         if (_lf_mlstrcmp (pattern->Maker, match->Maker) != 0)
+//             return 0; // Bah! different maker.
+//         else
+//             score += 10; // Good doggy, here's a cookie
+//     }
 
-    // And now the most complex part - compare models
-    if (pattern->Model && match->Model)
-    {
-        int _score = fuzzycmp->Compare (match->Model);
-        if (!_score)
-            return 0; // Model does not match
-        _score = (_score * 4) / 10;
-        if (!_score)
-            _score = 1;
-        score += _score;
-    }
+//     // And now the most complex part - compare models
+//     if (pattern->Model && match->Model)
+//     {
+//         int _score = fuzzycmp->Compare (match->Model);
+//         if (!_score)
+//             return 0; // Model does not match
+//         _score = (_score * 4) / 10;
+//         if (!_score)
+//             _score = 1;
+//         score += _score;
+//     }
 
-    return score;
-}
+//     return score;
+// }
 
 //---------------------------// The C interface //---------------------------//
 

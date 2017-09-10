@@ -62,40 +62,7 @@ extern "C" {
 /// Latest database version supported by this release
 #define LF_MAX_DATABASE_VERSION	2
 
-#if defined CONF_LENSFUN_STATIC
-/// This macro expands to an appropiate symbol visibility declaration
-#   define LF_EXPORT
-#else
-#   ifdef CONF_SYMBOL_VISIBILITY
-#       if defined PLATFORM_WINDOWS
-#           define LF_EXPORT    __declspec(dllexport)
-#       elif defined CONF_COMPILER_GCC || __clang__
-#           define LF_EXPORT    __attribute__((visibility("default")))
-#       else
-#           error "I don't know how to change symbol visibility for your compiler"
-#       endif
-#   else
-#       if defined PLATFORM_WINDOWS || defined _MSC_VER
-#           define LF_EXPORT    __declspec(dllimport)
-#       else
-#           define LF_EXPORT
-#       endif
-#   endif
-#endif
-
-#ifndef CONF_LENSFUN_INTERNAL
-/// For marking deprecated functions, see http://stackoverflow.com/a/21265197
-#    ifdef __GNUC__
-#        define DEPRECATED __attribute__((deprecated))
-#    elif defined(_MSC_VER)
-#        define DEPRECATED __declspec(deprecated)
-#    else
-#        pragma message("WARNING: You need to implement DEPRECATED for this compiler")
-#        define DEPRECATED
-#    endif
-#else
-#    define DEPRECATED
-#endif
+#define LF_EXPORT    __declspec(dllexport)
 
 /// C-compatible bool type; don't bother to define Yet Another Boolean Type
 #define cbool int
@@ -427,17 +394,6 @@ LF_EXPORT lfCamera *lf_camera_new ();
  *     lfCamera::~lfCamera
  */
 LF_EXPORT void lf_camera_destroy (lfCamera *camera);
-
-/**
- * @brief Copy the data from one lfCamera structure into another.
- * @param dest
- *     The destination object
- * @param source
- *     The source object
- * @sa
- *     lfCamera::operator = (const lfCamera &)
- */
-LF_EXPORT void lf_camera_copy (lfCamera *dest, const lfCamera *source);
 
 /** @sa lfCamera::Check */
 LF_EXPORT cbool lf_camera_check (lfCamera *camera);
@@ -1033,7 +989,7 @@ struct LF_EXPORT lfLens
      * @param cf
      *     The lens fov structure.
      */
-    DEPRECATED void AddCalibFov (const lfLensCalibFov *cf);
+    void AddCalibFov (const lfLensCalibFov *cf);
 
     /**
      * @brief Remove a field of view  entry from the lens fov structure.
@@ -1044,7 +1000,7 @@ struct LF_EXPORT lfLens
      * @param idx
      *     The lens information data index (zero-based).
      */
-    DEPRECATED bool RemoveCalibFov (int idx);
+    bool RemoveCalibFov (int idx);
 
     /**
      * @brief This method fills some fields if they are missing but
@@ -1201,7 +1157,7 @@ struct LF_EXPORT lfLens
      * @param res
      *     The resulting interpolated information data.
      */
-    DEPRECATED bool InterpolateFov (float focal, lfLensCalibFov &res) const;
+    bool InterpolateFov (float focal, lfLensCalibFov &res) const;
 #endif
 };
 
@@ -1280,7 +1236,7 @@ LF_EXPORT cbool lf_lens_interpolate_crop (const lfLens *lens, float focal,
     lfLensCalibCrop *res);
 
 /** @sa lfLens::InterpolateFov */
-DEPRECATED LF_EXPORT cbool lf_lens_interpolate_fov (const lfLens *lens, float focal,
+LF_EXPORT cbool lf_lens_interpolate_fov (const lfLens *lens, float focal,
     lfLensCalibFov *res);
 
 /** @sa lfLens::AddCalibDistortion */
@@ -1308,47 +1264,12 @@ LF_EXPORT void lf_lens_add_calib_crop (lfLens *lens, const lfLensCalibCrop *cc);
 LF_EXPORT cbool lf_lens_remove_calib_crop (lfLens *lens, int idx);
 
 /** @sa lfLens::AddCalibFov */
-DEPRECATED LF_EXPORT void lf_lens_add_calib_fov (lfLens *lens, const lfLensCalibFov *cf);
+LF_EXPORT void lf_lens_add_calib_fov (lfLens *lens, const lfLensCalibFov *cf);
 
 /** @sa lfLens::RemoveCalibFov */
-DEPRECATED LF_EXPORT cbool lf_lens_remove_calib_fov (lfLens *lens, int idx);
+LF_EXPORT cbool lf_lens_remove_calib_fov (lfLens *lens, int idx);
 
 /** @} */
-
-/*----------------------------------------------------------------------------*/
-
-/**
- * @defgroup Database Database functions
- * @brief Create, destroy and search database for objects.
- * @{
- */
-
-/**
- * @brief Flags controlling the behavior of database searches.
- */
-enum
-{
-    /**
-     * @brief This flag selects a looser search algorithm resulting in
-     * more results (still sorted by score).
-     *
-     * If it is not present, all results where at least one of the input
-     * words is missing will be discarded.
-     */
-    LF_SEARCH_LOOSE = 1,
-    /**
-     * @brief This flag makes Lensfun to sort the results by focal
-     * length, and remove all double lens names.
-     *
-     * If a lens has entries for different crop factors/aspect ratios,
-     * the only best match is included into the result.  This is meant
-     * to be used to create a list presented to the user to pick a lens.
-     * Or, to lookup a lens for which you know maker and model exactly,
-     * and to check whether the result list really contains only one
-     * element.
-     */
-    LF_SEARCH_SORT_AND_UNIQUIFY = 2
-};
 
 /**
  * @brief A lens database object.
@@ -1365,200 +1286,184 @@ enum
  */
 struct LF_EXPORT lfDatabase
 {
-    /** @brief Home lens database directory (deprecated). Replaced by lfDatabase::UserLocation. */
-    DEPRECATED char *HomeDataDir;
-    /** @brief Home lens database directory for automatic updates (deprecated). Replaced by lfDatabase::UserUpdatesLocation.*/
-    DEPRECATED char *UserUpdatesDir;
-
 #ifdef __cplusplus
-
-    /** @brief Home lens database directory (something like "~/.local/share/lensfun") */
-    static const char *const UserLocation;
-    /** @brief Home lens database directory for automatic updates (something
-     * like "~/.local/share/lensfun/updates") */
-    static const char *const UserUpdatesLocation;
-    /** @brief System lens database directory (something like "/usr/share/lensfun") */
-    static const char *const SystemLocation;
-    /** @brief System lens database directory for automatic updates (something
-    * like "/var/lib/lensfun-updates") */
-    static const char *const SystemUpdatesLocation;
 
     lfDatabase ();
     ~lfDatabase ();
 
-    /**
-     * @brief Find a set of cameras that fit given criteria.
-     *
-     * The maker and model must be given (if possible) exactly as they are
-     * spelled in database, except that the library will compare
-     * case-insensitively and will compress spaces. This means that the
-     * database must contain camera maker/lens *exactly* how it is given
-     * in EXIF data, but you may add human-friendly translations of them
-     * using the multi-language string feature (including a translation
-     * to "en" to avoid displaying EXIF tags in user interface - they are
-     * often upper-case which looks ugly).
-     * @param maker
-     *     Camera maker (either from EXIF tags or from some other source).
-     *     The string is expected to be pure ASCII, since EXIF data does
-     *     not allow 8-bit data to be used.
-     * @param model
-     *     Camera model (either from EXIF tags or from some other source).
-     *     The string is expected to be pure ASCII, since EXIF data does
-     *     not allow 8-bit data to be used.
-     * @return
-     *     A NULL-terminated list of cameras matching the search criteria
-     *     or NULL if none. Release return value with lf_free() (only the list
-     *     of pointers, not the camera objects!).
-     */
-    const lfCamera **FindCameras (const char *maker, const char *model) const;
+    // /**
+    //  * @brief Find a set of cameras that fit given criteria.
+    //  *
+    //  * The maker and model must be given (if possible) exactly as they are
+    //  * spelled in database, except that the library will compare
+    //  * case-insensitively and will compress spaces. This means that the
+    //  * database must contain camera maker/lens *exactly* how it is given
+    //  * in EXIF data, but you may add human-friendly translations of them
+    //  * using the multi-language string feature (including a translation
+    //  * to "en" to avoid displaying EXIF tags in user interface - they are
+    //  * often upper-case which looks ugly).
+    //  * @param maker
+    //  *     Camera maker (either from EXIF tags or from some other source).
+    //  *     The string is expected to be pure ASCII, since EXIF data does
+    //  *     not allow 8-bit data to be used.
+    //  * @param model
+    //  *     Camera model (either from EXIF tags or from some other source).
+    //  *     The string is expected to be pure ASCII, since EXIF data does
+    //  *     not allow 8-bit data to be used.
+    //  * @return
+    //  *     A NULL-terminated list of cameras matching the search criteria
+    //  *     or NULL if none. Release return value with lf_free() (only the list
+    //  *     of pointers, not the camera objects!).
+    //  */
+    // const lfCamera **FindCameras (const char *maker, const char *model) const;
 
-    /**
-     * @brief Searches all translations of camera maker and model.
-     *
-     * Thus, you may search for a user-entered camera even in a language
-     * different from English.  This function is somewhat similar to
-     * FindCameras(), but uses a different search algorithm.
-     *
-     * This is a lot slower than FindCameras().
-     * @param maker
-     *     Camera maker. This can be any UTF-8 string.
-     * @param model
-     *     Camera model. This can be any UTF-8 string.
-     * @param sflags
-     *     Additional flags influencing the search algorithm.
-     *     This is a combination of LF_SEARCH_XXX flags.
-     * @return
-     *     A NULL-terminated list of cameras matching the search criteria
-     *     or NULL if none. Release return value with lf_free() (only the list
-     *     of pointers, not the camera objects!).
-     */
-    const lfCamera **FindCamerasExt (const char *maker, const char *model,
-                                     int sflags = 0) const;
+    // /**
+    //  * @brief Searches all translations of camera maker and model.
+    //  *
+    //  * Thus, you may search for a user-entered camera even in a language
+    //  * different from English.  This function is somewhat similar to
+    //  * FindCameras(), but uses a different search algorithm.
+    //  *
+    //  * This is a lot slower than FindCameras().
+    //  * @param maker
+    //  *     Camera maker. This can be any UTF-8 string.
+    //  * @param model
+    //  *     Camera model. This can be any UTF-8 string.
+    //  * @param sflags
+    //  *     Additional flags influencing the search algorithm.
+    //  *     This is a combination of LF_SEARCH_XXX flags.
+    //  * @return
+    //  *     A NULL-terminated list of cameras matching the search criteria
+    //  *     or NULL if none. Release return value with lf_free() (only the list
+    //  *     of pointers, not the camera objects!).
+    //  */
+    // const lfCamera **FindCamerasExt (const char *maker, const char *model,
+    //                                  int sflags = 0) const;
 
-    /**
-     * @brief Retrieve a full list of cameras.
-     * @return
-     *     An NULL-terminated list containing all cameras loaded until now.
-     *     The list is valid only until the lens database is modified.
-     *     The returned pointer does not have to be freed.
-     */
-    const lfCamera *const *GetCameras () const;
+    // /**
+    //  * @brief Retrieve a full list of cameras.
+    //  * @return
+    //  *     An NULL-terminated list containing all cameras loaded until now.
+    //  *     The list is valid only until the lens database is modified.
+    //  *     The returned pointer does not have to be freed.
+    //  */
+    // const lfCamera *const *GetCameras () const;
 
-    /**
-     * @brief Parse a human-friendly lens description (ex: "smc PENTAX-F 35-105mm F4-5.6"
-     * or "SIGMA AF 28-300 F3.5-5.6 DL IF") and return a list of lfLens'es which
-     * are matching this description.
-     *
-     * Multiple lenses may be returned if multiple lenses match (perhaps due to
-     * non-unique lens description provided, e.g.  "Pentax SMC").
-     *
-     * The matching algorithm works as follows: first the user description
-     * is tried to be interpreted according to several well-known lens naming
-     * schemes, so additional data like focal and aperture ranges are extracted
-     * if they are present. After that word matching is done; a lens matches
-     * the description ONLY IF it contains all the words found in the description
-     * (including buzzwords e.g. IF IZ AL LD DI USM SDM etc). Order of the words
-     * does not matter. An additional check is done on the focal/aperture ranges,
-     * they must exactly match if they are specified.
-     * @param camera
-     *     The camera (can be NULL if camera is unknown, or just certain
-     *     fields in structure can be NULL). The algorithm will look for
-     *     a lens with crop factor not larger than of given camera, since
-     *     the mathematical models of the lens can be incorrect for sensor
-     *     sizes larger than the one used for calibration. Also camera
-     *     mount is taken into account, the lenses with incompatible
-     *     mounts will be filtered out.
-     * @param maker
-     *     Lens maker or NULL if not known.
-     * @param model
-     *     A human description of the lens model(-s).
-     * @param sflags
-     *     Additional flags influencing the search algorithm.
-     *     This is a combination of LF_SEARCH_XXX flags.
-     * @return
-     *     A list of lenses parsed from user description or NULL.
-     *     Release memory with lf_free(). The list is ordered in the
-     *     most-likely to least-likely order, e.g. the first returned
-     *     value is the most likely match.
-     */
-    const lfLens **FindLenses (const lfCamera *camera, const char *maker,
-                               const char *model, int sflags = 0) const;
+    // /**
+    //  * @brief Parse a human-friendly lens description (ex: "smc PENTAX-F 35-105mm F4-5.6"
+    //  * or "SIGMA AF 28-300 F3.5-5.6 DL IF") and return a list of lfLens'es which
+    //  * are matching this description.
+    //  *
+    //  * Multiple lenses may be returned if multiple lenses match (perhaps due to
+    //  * non-unique lens description provided, e.g.  "Pentax SMC").
+    //  *
+    //  * The matching algorithm works as follows: first the user description
+    //  * is tried to be interpreted according to several well-known lens naming
+    //  * schemes, so additional data like focal and aperture ranges are extracted
+    //  * if they are present. After that word matching is done; a lens matches
+    //  * the description ONLY IF it contains all the words found in the description
+    //  * (including buzzwords e.g. IF IZ AL LD DI USM SDM etc). Order of the words
+    //  * does not matter. An additional check is done on the focal/aperture ranges,
+    //  * they must exactly match if they are specified.
+    //  * @param camera
+    //  *     The camera (can be NULL if camera is unknown, or just certain
+    //  *     fields in structure can be NULL). The algorithm will look for
+    //  *     a lens with crop factor not larger than of given camera, since
+    //  *     the mathematical models of the lens can be incorrect for sensor
+    //  *     sizes larger than the one used for calibration. Also camera
+    //  *     mount is taken into account, the lenses with incompatible
+    //  *     mounts will be filtered out.
+    //  * @param maker
+    //  *     Lens maker or NULL if not known.
+    //  * @param model
+    //  *     A human description of the lens model(-s).
+    //  * @param sflags
+    //  *     Additional flags influencing the search algorithm.
+    //  *     This is a combination of LF_SEARCH_XXX flags.
+    //  * @return
+    //  *     A list of lenses parsed from user description or NULL.
+    //  *     Release memory with lf_free(). The list is ordered in the
+    //  *     most-likely to least-likely order, e.g. the first returned
+    //  *     value is the most likely match.
+    //  */
+    // const lfLens **FindLenses (const lfCamera *camera, const char *maker,
+    //                            const char *model, int sflags = 0) const;
 
-    /**
-     * @brief Find a set of lenses that fit certain criteria.
-     * @param lens
-     *     The approximative lense. Uncertain fields may be NULL.
-     *     The "CropFactor" field defines the minimal value for crop factor;
-     *     no lenses with crop factor larger than that will be returned.
-     *     The Mounts field will be scanned for allowed mounts, if NULL
-     *     any mounts are considered compatible.
-     * @param sflags
-     *     Additional flags influencing the search algorithm.
-     *     This is a combination of LF_SEARCH_XXX flags.
-     * @return
-     *     A NULL-terminated list of lenses matching the search criteria
-     *     or NULL if none. Release memory with lf_free(). The list is ordered
-     *     in the most-likely to least-likely order, e.g. the first returned
-     *     value is the most likely match.
-     */
-    const lfLens **FindLenses (const lfLens *lens, int sflags = 0) const;
+    // /**
+    //  * @brief Find a set of lenses that fit certain criteria.
+    //  * @param lens
+    //  *     The approximative lense. Uncertain fields may be NULL.
+    //  *     The "CropFactor" field defines the minimal value for crop factor;
+    //  *     no lenses with crop factor larger than that will be returned.
+    //  *     The Mounts field will be scanned for allowed mounts, if NULL
+    //  *     any mounts are considered compatible.
+    //  * @param sflags
+    //  *     Additional flags influencing the search algorithm.
+    //  *     This is a combination of LF_SEARCH_XXX flags.
+    //  * @return
+    //  *     A NULL-terminated list of lenses matching the search criteria
+    //  *     or NULL if none. Release memory with lf_free(). The list is ordered
+    //  *     in the most-likely to least-likely order, e.g. the first returned
+    //  *     value is the most likely match.
+    //  */
+    // const lfLens **FindLenses (const lfLens *lens, int sflags = 0) const;
 
-    /**
-     * @brief Retrieve a full list of lenses.
-     * @return
-     *     An NULL-terminated list containing all lenses loaded until now.
-     *     The list is valid only until the lens database is modified.
-     *     The returned pointer does not have to be freed.
-     */
-    const lfLens *const *GetLenses () const;
+    // /**
+    //  * @brief Retrieve a full list of lenses.
+    //  * @return
+    //  *     An NULL-terminated list containing all lenses loaded until now.
+    //  *     The list is valid only until the lens database is modified.
+    //  *     The returned pointer does not have to be freed.
+    //  */
+    // const lfLens *const *GetLenses () const;
 
-    /**
-     * @brief Return the lfMount structure given the (basic) mount name.
-     * @param mount
-     *     The basic mount name.
-     * @return
-     *     A pointer to lfMount structure or NULL.
-     */
-    const lfMount *FindMount (const char *mount) const;
+    // /**
+    //  * @brief Return the lfMount structure given the (basic) mount name.
+    //  * @param mount
+    //  *     The basic mount name.
+    //  * @return
+    //  *     A pointer to lfMount structure or NULL.
+    //  */
+    // const lfMount *FindMount (const char *mount) const;
 
-    /**
-     * @brief Get the name of a mount in current locale.
-     * @param mount
-     *     The basic mount name.
-     * @return
-     *     The name of the mount in current locale (UTF-8 string).
-     */
-    const char *MountName (const char *mount) const;
+    // /**
+    //  * @brief Get the name of a mount in current locale.
+    //  * @param mount
+    //  *     The basic mount name.
+    //  * @return
+    //  *     The name of the mount in current locale (UTF-8 string).
+    //  */
+    // const char *MountName (const char *mount) const;
 
-    /**
-     * @brief Retrieve a full list of mounts.
-     * @return
-     *     An array containing all mounts loaded until now.
-     *     The list is valid only until the mount database is modified.
-     *     The returned pointer does not have to be freed.
-     */
-    const lfMount *const *GetMounts () const;
+    // /**
+    //  * @brief Retrieve a full list of mounts.
+    //  * @return
+    //  *     An array containing all mounts loaded until now.
+    //  *     The list is valid only until the mount database is modified.
+    //  *     The returned pointer does not have to be freed.
+    //  */
+    // const lfMount *const *GetMounts () const;
 
-    /**
-     * @brief Add a mount to the database.
-     * @param mount
-     *     the mount to add
-     */
-    void AddMount (lfMount *mount);
+    // /**
+    //  * @brief Add a mount to the database.
+    //  * @param mount
+    //  *     the mount to add
+    //  */
+    // void AddMount (lfMount *mount);
 
-    /**
-     * @brief Add a camera to the database.
-     * @param camera
-     *     the camera to add
-     */
-    void AddCamera (lfCamera *camera);
+    // /**
+    //  * @brief Add a camera to the database.
+    //  * @param camera
+    //  *     the camera to add
+    //  */
+    // void AddCamera (lfCamera *camera);
 
-    /**
-     * @brief Add a lens to the database.
-     * @param lens
-     *     the lens to add
-     */
-    void AddLens (lfLens *lens);
+    // /**
+    //  * @brief Add a lens to the database.
+    //  * @param lens
+    //  *     the lens to add
+    //  */
+    // void AddLens (lfLens *lens);
 
 private:
 #endif
@@ -1569,60 +1474,60 @@ private:
 
 C_TYPEDEF (struct, lfDatabase)
 
-/**
- * @brief Create a new empty database object.
- *
- * Usually the application will want to do this at startup,
- * after which it would be a good idea to call lf_db_load().
- * @return
- *     A new empty database object.
- * @sa
- *     lfDatabase::lfDatabase
- */
-LF_EXPORT lfDatabase *lf_db_new (void);
+// /**
+//  * @brief Create a new empty database object.
+//  *
+//  * Usually the application will want to do this at startup,
+//  * after which it would be a good idea to call lf_db_load().
+//  * @return
+//  *     A new empty database object.
+//  * @sa
+//  *     lfDatabase::lfDatabase
+//  */
+// LF_EXPORT lfDatabase *lf_db_new (void);
 
-/**
- * @brief Destroy the database object.
- *
- * This is the only way to correctly destroy the database object.
- * @param db
- *     The database to destroy.
- * @sa
- *     lfDatabase::~lfDatabase
- */
-LF_EXPORT void lf_db_destroy (lfDatabase *db);
+// /**
+//  * @brief Destroy the database object.
+//  *
+//  * This is the only way to correctly destroy the database object.
+//  * @param db
+//  *     The database to destroy.
+//  * @sa
+//  *     lfDatabase::~lfDatabase
+//  */
+// LF_EXPORT void lf_db_destroy (lfDatabase *db);
 
-/** @sa lfDatabase::FindCameras */
-LF_EXPORT const lfCamera **lf_db_find_cameras (
-    const lfDatabase *db, const char *maker, const char *model);
+// /** @sa lfDatabase::FindCameras */
+// LF_EXPORT const lfCamera **lf_db_find_cameras (
+//     const lfDatabase *db, const char *maker, const char *model);
 
-/** @sa lfDatabase::FindCamerasExt */
-LF_EXPORT const lfCamera **lf_db_find_cameras_ext (
-    const lfDatabase *db, const char *maker, const char *model, int sflags);
+// /** @sa lfDatabase::FindCamerasExt */
+// LF_EXPORT const lfCamera **lf_db_find_cameras_ext (
+//     const lfDatabase *db, const char *maker, const char *model, int sflags);
 
-/** @sa lfDatabase::GetCameras */
-LF_EXPORT const lfCamera *const *lf_db_get_cameras (const lfDatabase *db);
+// /** @sa lfDatabase::GetCameras */
+// LF_EXPORT const lfCamera *const *lf_db_get_cameras (const lfDatabase *db);
 
-/** @sa lfDatabase::FindLenses(const lfCamera *, const char *, const char *) */
-LF_EXPORT const lfLens **lf_db_find_lenses_hd (
-    const lfDatabase *db, const lfCamera *camera, const char *maker,
-    const char *lens, int sflags);
+// /** @sa lfDatabase::FindLenses(const lfCamera *, const char *, const char *) */
+// LF_EXPORT const lfLens **lf_db_find_lenses_hd (
+//     const lfDatabase *db, const lfCamera *camera, const char *maker,
+//     const char *lens, int sflags);
 
-/** @sa lfDatabase::FindLenses(const lfCamera *, const lfLens *) */
-LF_EXPORT const lfLens **lf_db_find_lenses (
-    const lfDatabase *db, const lfLens *lens, int sflags);
+// /** @sa lfDatabase::FindLenses(const lfCamera *, const lfLens *) */
+// LF_EXPORT const lfLens **lf_db_find_lenses (
+//     const lfDatabase *db, const lfLens *lens, int sflags);
 
-/** @sa lfDatabase::GetLenses */
-LF_EXPORT const lfLens *const *lf_db_get_lenses (const lfDatabase *db);
+// /** @sa lfDatabase::GetLenses */
+// LF_EXPORT const lfLens *const *lf_db_get_lenses (const lfDatabase *db);
 
-/** @sa lfDatabase::FindMount */
-LF_EXPORT const lfMount *lf_db_find_mount (const lfDatabase *db, const char *mount);
+// /** @sa lfDatabase::FindMount */
+// LF_EXPORT const lfMount *lf_db_find_mount (const lfDatabase *db, const char *mount);
 
-/** @sa lfDatabase::MountName */
-LF_EXPORT const char *lf_db_mount_name (const lfDatabase *db, const char *mount);
+// /** @sa lfDatabase::MountName */
+// LF_EXPORT const char *lf_db_mount_name (const lfDatabase *db, const char *mount);
 
-/** @sa lfDatabase::GetMounts */
-LF_EXPORT const lfMount *const *lf_db_get_mounts (const lfDatabase *db);
+// /** @sa lfDatabase::GetMounts */
+// LF_EXPORT const lfMount *const *lf_db_get_mounts (const lfDatabase *db);
 
 /** @} */
 
@@ -1918,34 +1823,6 @@ struct LF_EXPORT lfModifier
     ~lfModifier ();
 
     /**
-     * @brief Create an empty image modifier object.
-     *
-     * Before using the returned object you must add the required
-     * modifier callbacks (see methods AddXXXCallback below).
-     *
-     * You must provide the original image width/height even if you
-     * plan to correct just a part of the image.
-     *
-     * This function is deprecated and will be removed in the future. 
-     * Please use the standard constructor instead.
-     *
-     * @param lens
-     *     For all modifications, the crop factor, aspect ratio, and
-     *     center shift of this lens will be used.
-     * @param crop
-     *     The crop factor for current camera. The distortion models will
-     *     take this into account if lens models were measured on a camera
-     *     with a different crop factor.
-     * @param width
-     *     The width of the image you want to correct.
-     * @param height
-     *     The height of the image you want to correct.
-     * @return
-     *     A new empty image modifier object.
-     */
-    DEPRECATED static lfModifier *Create (const lfLens *lens, float crop, int width, int height);
-
-    /**
      * @brief Initialize the process of correcting aberrations in a image.
      *
      * The modifier object will be set up to rectify all aberrations
@@ -2045,14 +1922,6 @@ struct LF_EXPORT lfModifier
      *     True if the perspective correction was enabled.
      */
     bool EnablePerspectiveCorrection (float *x, float *y, int count, float d);
-
-    /**
-     * @brief Destroy the modifier object.
-     *
-     * This function is deprecated and will be removed in the future. 
-     * Please use the standard destructor instead.
-     */
-    DEPRECATED void Destroy ();
 
     /**
      * @brief Add a user-defined callback to the coordinate correction chain.

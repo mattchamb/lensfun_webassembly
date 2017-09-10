@@ -22,18 +22,6 @@
 #define CONF_COMPILER_GCC 1
 #endif
 
-#if defined(PLATFORM_LINUX)
-  #define SYSTEM_DB_PATH "/usr/local/share/lensfun"
-  #define SYSTEM_DB_UPDATE_PATH "/var/lib/lensfun-updates"
-#elif defined(PLATFORM_WINDOWS)
-  #define SYSTEM_DB_PATH "share/lensfun"
-  #define SYSTEM_DB_UPDATE_PATH "share/lensfun-updates"
-#elif defined(PLATFORM_OSX)
-  #define SYSTEM_DB_PATH "/usr/local/share/lensfun"
-  #define SYSTEM_DB_UPDATE_PATH "/var/lib/lensfun-updates"
-#endif
-
-#define DATABASE_SUBDIR "version_1"
 
 // add a macro to know we're compiling Lensfun, not a client library
 #define CONF_LENSFUN_INTERNAL

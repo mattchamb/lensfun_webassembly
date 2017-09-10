@@ -43,8 +43,6 @@ bool lfModifier::AddSubpixelCallbackTCA (lfLensCalibTCA &model, bool reverse)
                 return true;
 
             case LF_TCA_MODEL_ACM:
-                g_warning ("[lensfun] \"acm\" TCA model is not yet implemented "
-                           "for reverse correction");
                 return false;
 
             default:
@@ -86,7 +84,8 @@ bool lfModifier::AddSubpixelCallbackTCA (lfLensCalibTCA &model, bool reverse)
 bool lfModifier::ApplySubpixelDistortion (
     float xu, float yu, int width, int height, float *res) const
 {
-    if (((GPtrArray *)SubpixelCallbacks)->len <= 0 || height <= 0)
+    std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)SubpixelCallbacks;
+    if (callbacks->size <= 0 || height <= 0)
         return false; // nothing to do
 
     // All callbacks work with normalized coordinates
@@ -105,10 +104,10 @@ bool lfModifier::ApplySubpixelDistortion (
             out += 6;
         }
 
-        for (i = 0; i < (int)((GPtrArray *)SubpixelCallbacks)->len; i++)
+        for (i = 0; i < callbacks->size->len; i++)
         {
             lfSubpixelCallbackData *cd =
-                (lfSubpixelCallbackData *)g_ptr_array_index ((GPtrArray *)SubpixelCallbacks, i);
+                (lfSubpixelCallbackData *)callbacks->at(i);
             cd->callback (cd->data, res, width);
         }
 
@@ -127,8 +126,11 @@ bool lfModifier::ApplySubpixelDistortion (
 bool lfModifier::ApplySubpixelGeometryDistortion (
     float xu, float yu, int width, int height, float *res) const
 {
-    if ((((GPtrArray *)SubpixelCallbacks)->len <= 0 && ((GPtrArray *)CoordCallbacks)->len <= 0)
-     || height <= 0)
+
+    std::vector<lfCallbackData*>* spCallbacks = (std::vector<lfCallbackData*>*)SubpixelCallbacks;
+    std::vector<lfCallbackData*>* coordCallbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
+    
+    if ((spCallbacks->size <= 0 && coordCallbacks->size <= 0) || height <= 0)
         return false; // nothing to do
 
     // All callbacks work with normalized coordinates
@@ -147,17 +149,17 @@ bool lfModifier::ApplySubpixelGeometryDistortion (
             out += 6;
         }
 
-        for (i = 0; i < (int)((GPtrArray *)CoordCallbacks)->len; i++)
+        for (i = 0; i < coordCallbacks->size; i++)
         {
             lfCoordCallbackData *cd =
-                (lfCoordCallbackData *)g_ptr_array_index ((GPtrArray *)CoordCallbacks, i);
+                (lfCoordCallbackData *)coordCallbacks->at(i);
             cd->callback (cd->data, res, width * 3);
         }
 
-        for (i = 0; i < (int)((GPtrArray *)SubpixelCallbacks)->len; i++)
+        for (i = 0; i < spCallbacks->size; i++)
         {
             lfSubpixelCallbackData *cd =
-                (lfSubpixelCallbackData *)g_ptr_array_index ((GPtrArray *)SubpixelCallbacks, i);
+                (lfSubpixelCallbackData *)spCallbacks->at(i);
             cd->callback (cd->data, res, width);
         }
 

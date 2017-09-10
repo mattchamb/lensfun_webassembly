@@ -24,28 +24,6 @@ lfCamera::~lfCamera ()
     lf_free (Mount);
 }
 
-lfCamera::lfCamera (const lfCamera &other)
-{
-    Maker = lf_mlstr_dup (other.Maker);
-    Model = lf_mlstr_dup (other.Model);
-    Variant = lf_mlstr_dup (other.Variant);
-    Mount = g_strdup (other.Mount);
-    CropFactor = other.CropFactor;
-}
-
-lfCamera &lfCamera::operator = (const lfCamera &other)
-{
-    lf_free (Maker);
-    Maker = lf_mlstr_dup (other.Maker);
-    lf_free (Model);
-    Model = lf_mlstr_dup (other.Model);
-    lf_free (Variant);
-    Variant = lf_mlstr_dup (other.Variant);
-    _lf_setstr (&Mount, other.Mount);
-    CropFactor = other.CropFactor;
-    return *this;
-}
-
 void lfCamera::SetMaker (const char *val, const char *lang)
 {
     Maker = lf_mlstr_add (Maker, lang, val);
@@ -86,17 +64,12 @@ void lf_camera_destroy (lfCamera *camera)
     delete camera;
 }
 
-void lf_camera_copy (lfCamera *dest, const lfCamera *source)
-{
-    *dest = *source;
-}
-
 cbool lf_camera_check (lfCamera *camera)
 {
     return camera->Check ();
 }
 
-gint _lf_camera_compare (gconstpointer a, gconstpointer b)
+int _lf_camera_compare (const void* a, const void* b)
 {
     lfCamera *i1 = (lfCamera *)a;
     lfCamera *i2 = (lfCamera *)b;

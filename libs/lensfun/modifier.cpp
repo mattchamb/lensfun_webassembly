@@ -8,11 +8,7 @@
 #include "lensfunprv.h"
 #include <math.h>
 #include "windows/mathconstants.h"
-
-lfModifier *lfModifier::Create (const lfLens *lens, float crop, int width, int height)
-{
-    return new lfModifier (lens, crop, width, height);
-}
+#include <vector>
 
 int lfModifier::Initialize (
     const lfLens *lens, lfPixelFormat format, float focal, float aperture,
@@ -118,11 +114,6 @@ float lfModifier::GetRealFocalLength (const lfLens *lens, float focal)
     return result;
 }
 
-void lfModifier::Destroy ()
-{
-    delete this;
-}
-
 //---------------------------------------------------------------------------//
 
 /*
@@ -183,9 +174,9 @@ void lfModifier::Destroy ()
 
 lfModifier::lfModifier (const lfLens *lens, float crop, int width, int height)
 {
-    SubpixelCallbacks = g_ptr_array_new ();
-    ColorCallbacks = g_ptr_array_new ();
-    CoordCallbacks = g_ptr_array_new ();
+    SubpixelCallbacks = new std::vector<lfCallbackData*> ();
+    ColorCallbacks = new std::vector<lfCallbackData*> ();
+    CoordCallbacks = new std::vector<lfCallbackData*> ();
 
     // Avoid divide overflows on singular cases.  The "- 1" is due to the fact
     // that `Width` and `Height` are measured at the pixel centres (they are
@@ -236,17 +227,18 @@ lfModifier::lfModifier (const lfLens *lens, float crop, int width, int height)
 
 static void free_callback_list (void *arr)
 {
-    for (unsigned i = 0; i < ((GPtrArray *)arr)->len; i++)
+    std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)arr;
+    for (unsigned i = 0; i < callbacks->size; i++)
     {
-        lfCallbackData *d = (lfCallbackData *)g_ptr_array_index ((GPtrArray *)arr, i);
+        lfCallbackData *d = (lfCallbackData *)callbacks->at(i);
         if (d)
         {
             if (d->data_size)
-                g_free (d->data);
+                free (d->data);
             delete d;
         }
     }
-    g_ptr_array_free ((GPtrArray *)arr, TRUE);
+    delete callbacks;
 }
 
 lfModifier::~lfModifier ()
@@ -256,7 +248,7 @@ lfModifier::~lfModifier ()
     free_callback_list (CoordCallbacks);
 }
 
-static gint _lf_coordcb_compare (gconstpointer a, gconstpointer b)
+static int _lf_coordcb_compare (const void* a, const void* b)
 {
     lfCallbackData *d1 = (lfCallbackData *)a;
     lfCallbackData *d2 = (lfCallbackData *)b;
@@ -271,12 +263,15 @@ void lfModifier::AddCallback (void *arr, lfCallbackData *d,
     d->data_size = data_size;
     if (data_size)
     {
-        d->data = g_malloc (data_size);
+        d->data = malloc (data_size);
         memcpy (d->data, data, data_size);
     }
     else
         d->data = data;
-    _lf_ptr_array_insert_sorted ((GPtrArray *)arr, d, _lf_coordcb_compare);
+
+    std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)arr;
+    //TODO: Properly do the priority.
+    callbacks->push_back(d);
 }
 
 //---------------------------// The C interface //---------------------------//
@@ -289,7 +284,7 @@ lfModifier *lf_modifier_new (
 
 void lf_modifier_destroy (lfModifier *modifier)
 {
-    modifier->Destroy ();
+    delete modifier;
 }
 
 int lf_modifier_initialize (

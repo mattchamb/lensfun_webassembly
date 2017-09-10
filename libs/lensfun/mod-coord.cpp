@@ -69,19 +69,11 @@ bool lfModifier::AddCoordCallbackDistortion (lfLensCalibDistortion &model, bool 
                 tmp [0] = model.Terms [0] / pow (d, 4);
                 tmp [1] = model.Terms [1] / pow (d, 3);
                 tmp [2] = model.Terms [2] / pow (d, 2);
-#ifdef VECTORIZATION_SSE
-                if (_lf_detect_cpu_features () & LF_CPU_FLAG_SSE)
-                    AddCoordCallback (ModifyCoord_UnDist_PTLens_SSE, 250,
-                                      tmp, sizeof (float) * 3);
-                else
-#endif
                 AddCoordCallback (ModifyCoord_UnDist_PTLens, 250,
                                   tmp, sizeof (float) * 3);
                 break;
             }
             case LF_DIST_MODEL_ACM:
-                g_warning ("[lensfun] \"acm\" distortion model is not yet implemented "
-                           "for reverse correction");
                 return false;
 
             default:
@@ -94,12 +86,6 @@ bool lfModifier::AddCoordCallbackDistortion (lfLensCalibDistortion &model, bool 
                 // See "Note about PT-based distortion models" at the top of
                 // this file.
                 tmp [0] = model.Terms [0] / pow (1 - model.Terms [0], 3);
-#ifdef VECTORIZATION_SSE
-                if (_lf_detect_cpu_features () & LF_CPU_FLAG_SSE)
-                    AddCoordCallback (ModifyCoord_Dist_Poly3_SSE, 750,
-                                      tmp, sizeof (float));
-                else
-#endif
                 AddCoordCallback (ModifyCoord_Dist_Poly3, 750,
                                   tmp, sizeof (float));
                 break;
@@ -117,12 +103,6 @@ bool lfModifier::AddCoordCallbackDistortion (lfLensCalibDistortion &model, bool 
                 tmp [0] = model.Terms [0] / pow (d, 4);
                 tmp [1] = model.Terms [1] / pow (d, 3);
                 tmp [2] = model.Terms [2] / pow (d, 2);
-#ifdef VECTORIZATION_SSE
-                if (_lf_detect_cpu_features () & LF_CPU_FLAG_SSE)
-                    AddCoordCallback (ModifyCoord_Dist_PTLens_SSE, 750,
-                                      tmp, sizeof (float) * 3);
-                else
-#endif
                 AddCoordCallback (ModifyCoord_Dist_PTLens, 750,
                                   tmp, sizeof (float) * 3);
                 break;
@@ -170,10 +150,12 @@ float lfModifier::GetTransformedDistance (lfPoint point) const
         float res [2];
 
         res [0] = ca * ru; res [1] = sa * ru;
-        for (int j = 0; j < (int)((GPtrArray *)CoordCallbacks)->len; j++)
+
+        std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
+
+        for (int j = 0; j < callbacks->size; j++)
         {
-            lfCoordCallbackData *cd =
-                (lfCoordCallbackData *)g_ptr_array_index ((GPtrArray *)CoordCallbacks, j);
+            lfCoordCallbackData *cd = (lfCoordCallbackData *)callbacks->at(j);
             cd->callback (cd->data, res, 1);
         }
         double rd = AutoscaleResidualDistance (res);
@@ -187,10 +169,9 @@ float lfModifier::GetTransformedDistance (lfPoint point) const
 
         // Compute approximative function prime in (x,y)
         res [0] = ca * (ru + dx); res [1] = sa * (ru + dx);
-        for (int j = 0; j < (int)((GPtrArray *)CoordCallbacks)->len; j++)
+        for (int j = 0; j < callbacks->size; j++)
         {
-            lfCoordCallbackData *cd =
-                (lfCoordCallbackData *)g_ptr_array_index ((GPtrArray *)CoordCallbacks, j);
+            lfCoordCallbackData *cd = (lfCoordCallbackData *)callbacks->at(j);
             cd->callback (cd->data, res, 1);
         }
         double rd1 = AutoscaleResidualDistance (res);
@@ -215,9 +196,12 @@ float lfModifier::GetTransformedDistance (lfPoint point) const
 float lfModifier::GetAutoScale (bool reverse)
 {
     // Compute the scale factor automatically
-    const float subpixel_scale = ((GPtrArray *)SubpixelCallbacks)->len == 0 ? 1.0 : 1.001;
+        std::vector<lfCallbackData*>* spCallbacks = (std::vector<lfCallbackData*>*)SubpixelCallbacks;
+    const float subpixel_scale = spCallbacks->size == 0 ? 1.0 : 1.001;
 
-    if (((GPtrArray *)CoordCallbacks)->len == 0)
+
+    std::vector<lfCallbackData*>* coordCallbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
+    if (coordCallbacks->size == 0)
         return subpixel_scale;
 
     // 3 2 1
@@ -277,10 +261,6 @@ bool lfModifier::AddCoordCallbackScale (float scale, bool reverse)
 
 bool lfModifier::AddCoordCallbackGeometry (lfLensType from, lfLensType to, float focal /*=0*/)
 {
-    if (focal)
-        g_warning ("[lensfun] The 'focal' parameter to "
-                   "lfModifier::AddCoordCallbackGeometry () is deprecated.");
-
     float tmp [2];
     tmp [0] = 1 / FocalLengthNormalized;
     tmp [1] = FocalLengthNormalized;
@@ -474,7 +454,8 @@ bool lfModifier::AddCoordCallbackGeometry (lfLensType from, lfLensType to, float
 bool lfModifier::ApplyGeometryDistortion (
     float xu, float yu, int width, int height, float *res) const
 {
-    if (((GPtrArray *)CoordCallbacks)->len <= 0 || height <= 0)
+    std::vector<lfCallbackData*>* coordCallbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
+    if (coordCallbacks->size <= 0 || height <= 0)
         return false; // nothing to do
 
     // All callbacks work with normalized coordinates
@@ -491,10 +472,9 @@ bool lfModifier::ApplyGeometryDistortion (
             res [i * 2 + 1] = y;
         }
 
-        for (i = 0; i < (int)((GPtrArray *)CoordCallbacks)->len; i++)
+        for (i = 0; i < coordCallbacks->size; i++)
         {
-            lfCoordCallbackData *cd =
-                (lfCoordCallbackData *)g_ptr_array_index ((GPtrArray *)CoordCallbacks, i);
+            lfCoordCallbackData *cd = (lfCoordCallbackData *)coordCallbacks->at(i);
             cd->callback (cd->data, res, width);
         }
 

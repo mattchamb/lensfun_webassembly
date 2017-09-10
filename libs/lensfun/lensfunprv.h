@@ -69,24 +69,24 @@ template<typename T> static inline T clampd (double x, double min, double max)
  */
 extern void _lf_list_free (void **list);
 
-// /**
-//  * @brief Make a copy of given value into given variable using g_strdup,
-//  * freeing the old value if defined.
-//  * @param var
-//  *     The variable to copy value into
-//  * @param val
-//  *     The value to assign to the variable
-//  */
-// extern void _lf_setstr (gchar **var, const gchar *val);
+/**
+ * @brief Make a copy of given value into given variable using g_strdup,
+ * freeing the old value if defined.
+ * @param var
+ *     The variable to copy value into
+ * @param val
+ *     The value to assign to the variable
+ */
+extern void _lf_setstr (char **var, const char *val);
 
-// /**
-//  * @brief Add a string to the end of a string list.
-//  * @param var
-//  *     A pointer to an array of strings.
-//  * @param val
-//  *     The value to be added to the array.
-//  */
-// extern void _lf_addstr (gchar ***var, const gchar *val);
+/**
+ * @brief Add a string to the end of a string list.
+ * @param var
+ *     A pointer to an array of strings.
+ * @param val
+ *     The value to be added to the array.
+ */
+extern void _lf_addstr (char ***var, const char *val);
 
 // /**
 //  * @brief Insert a item into a GPtrArray, keeping the array sorted.
@@ -137,36 +137,36 @@ extern void _lf_list_free (void **list);
 // extern int _lf_ptr_array_find_sorted (
 //     const GPtrArray *array, void *item, GCompareFunc compare);
 
-// /**
-//  * @brief Add a object to a list of objects.
-//  *
-//  * Accepts an optional pointer to
-//  * a function that compares two values from the list, if function
-//  * returns true the existing object is replaced with the new one.
-//  * @param var
-//  *     A pointer to an array of objects.
-//  * @param val
-//  *     The value to be added to the array.
-//  * @param val_size
-//  *     The size of the value in bytes.
-//  * @param cmpf
-//  *     An auxiliary function which, if not NULL, should return
-//  *     true if two objects are similar or false if not.
-//  */
-// extern void _lf_addobj (void ***var, const void *val, size_t val_size,
-//     bool (*cmpf) (const void *, const void *));
+/**
+ * @brief Add a object to a list of objects.
+ *
+ * Accepts an optional pointer to
+ * a function that compares two values from the list, if function
+ * returns true the existing object is replaced with the new one.
+ * @param var
+ *     A pointer to an array of objects.
+ * @param val
+ *     The value to be added to the array.
+ * @param val_size
+ *     The size of the value in bytes.
+ * @param cmpf
+ *     An auxiliary function which, if not NULL, should return
+ *     true if two objects are similar or false if not.
+ */
+extern void _lf_addobj (void ***var, const void *val, size_t val_size,
+    bool (*cmpf) (const void *, const void *));
 
-// /**
-//  * @brief Remove an object from a list of objects, freeing memory which was
-//  * allocated by _lf_addobj().
-//  * @param var
-//  *     A pointer to an array of objects.
-//  * @param idx
-//  *     The index of the object to remove (zero-based).
-//  * @return
-//  *     false if idx is out of range.
-//  */
-// extern bool _lf_delobj (void ***var, int idx);
+/**
+ * @brief Remove an object from a list of objects, freeing memory which was
+ * allocated by _lf_addobj().
+ * @param var
+ *     A pointer to an array of objects.
+ * @param idx
+ *     The index of the object to remove (zero-based).
+ * @return
+ *     false if idx is out of range.
+ */
+extern bool _lf_delobj (void ***var, int idx);
 
 // /**
 //  * @brief Appends a formatted string to a dynamically-growing string
@@ -207,16 +207,16 @@ extern void _lf_list_free (void **list);
 //  */
 // extern const char *_lf_get_distortion_model_id (lfDistortionModel model);
 
-// /**
-//  * @brief Something like a very advanced strcmp().
-//  *
-//  * It doesn't segfault if one or both strings are NULL:
-//  * NULL is considered to be less than any string.
-//  * Actually this function does a fuzzy comparison of the strings,
-//  * ignoring spaces at both ends of the string, compressing multiple
-//  * spaces into one and ignoring character case.
-//  */
-// extern int _lf_strcmp (const char *s1, const char *s2);
+/**
+ * @brief Something like a very advanced strcmp().
+ *
+ * It doesn't segfault if one or both strings are NULL:
+ * NULL is considered to be less than any string.
+ * Actually this function does a fuzzy comparison of the strings,
+ * ignoring spaces at both ends of the string, compressing multiple
+ * spaces into one and ignoring character case.
+ */
+extern int _lf_strcmp (const char *s1, const char *s2);
 
 // /**
 //  * @brief Same as _lf_strcmp(), but compares a string with a multi-language
@@ -352,8 +352,8 @@ extern float _lf_interpolate (float y1, float y2, float y3, float y4, float t);
  *     every field matches and 0 means that at least one field is
  *     fundamentally different.
  */
-extern int _lf_lens_compare_score (const lfLens *pattern, const lfLens *match,
-                                   lfFuzzyStrCmp *fuzzycmp, const char **compat_mounts);
+// extern int _lf_lens_compare_score (const lfLens *pattern, const lfLens *match,
+//                                    lfFuzzyStrCmp *fuzzycmp, const char **compat_mounts);
 
 enum
 {

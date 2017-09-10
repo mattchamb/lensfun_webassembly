@@ -22,35 +22,10 @@ lfMount::~lfMount ()
     _lf_list_free ((void **)Compat);
 }
 
-lfMount::lfMount (const lfMount &other)
-{
-    Name = lf_mlstr_dup (other.Name);
-    Compat = NULL;
-    if (other.Compat)
-        for (int i = 0; other.Compat [i]; i++)
-                AddCompat (other.Compat [i]);
-}
-
-lfMount &lfMount::operator = (const lfMount &other)
-{
-    lf_free (Name);
-    Name = lf_mlstr_dup (other.Name);
-    lf_free (Compat); Compat = NULL;
-    if (other.Compat)
-        for (int i = 0; other.Compat [i]; i++)
-                AddCompat (other.Compat [i]);
-
-    return *this;
-}
 
 void lfMount::SetName (const char *val, const char *lang)
 {
     Name = lf_mlstr_add (Name, lang, val);
-}
-
-void lfMount::AddCompat (const char *val)
-{
-    _lf_addstr (&Compat, val);
 }
 
 bool lfMount::Check ()
@@ -59,14 +34,6 @@ bool lfMount::Check ()
         return false;
 
     return true;
-}
-
-gint _lf_mount_compare (gconstpointer a, gconstpointer b)
-{
-    lfMount *i1 = (lfMount *)a;
-    lfMount *i2 = (lfMount *)b;
-
-    return _lf_strcmp (i1->Name, i2->Name);
 }
 
 //---------------------------// The C interface //---------------------------//
