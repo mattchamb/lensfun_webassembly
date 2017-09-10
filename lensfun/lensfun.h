@@ -23,6 +23,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <float.h>
 
 #ifdef __cplusplus
 
@@ -57,13 +58,7 @@ extern "C" {
 /// Full library version
 #define LF_VERSION	((LF_VERSION_MAJOR << 24) | (LF_VERSION_MINOR << 16) | (LF_VERSION_MICRO << 8) | LF_VERSION_BUGFIX)
 
-/// Oldest database version supported by this release
-#define LF_MIN_DATABASE_VERSION	0
-/// Latest database version supported by this release
-#define LF_MAX_DATABASE_VERSION	2
-
-#define LF_EXPORT    __declspec(dllexport)
-
+#define LF_EXPORT    
 /// C-compatible bool type; don't bother to define Yet Another Boolean Type
 #define cbool int
 

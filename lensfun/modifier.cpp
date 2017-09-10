@@ -7,6 +7,7 @@
 #include "lensfun.h"
 #include "lensfunprv.h"
 #include <math.h>
+#include <stdlib.h>
 #include "windows/mathconstants.h"
 #include <vector>
 
@@ -228,7 +229,7 @@ lfModifier::lfModifier (const lfLens *lens, float crop, int width, int height)
 static void free_callback_list (void *arr)
 {
     std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)arr;
-    for (unsigned i = 0; i < callbacks->size; i++)
+    for (unsigned i = 0; i < callbacks->size(); i++)
     {
         lfCallbackData *d = (lfCallbackData *)callbacks->at(i);
         if (d)

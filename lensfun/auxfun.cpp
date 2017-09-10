@@ -8,6 +8,7 @@
 #include "lensfunprv.h"
 #include <locale.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <math.h>
 
 typedef char gchar;

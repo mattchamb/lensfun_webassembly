@@ -4,3 +4,6 @@ include/lensfun/lensfun.h
 docs/website/_site
 *.pyc
 TAGS
+dist/
+parser.out
+WebIDLGrammar.pkl

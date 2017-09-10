@@ -153,7 +153,7 @@ float lfModifier::GetTransformedDistance (lfPoint point) const
 
         std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
 
-        for (int j = 0; j < callbacks->size; j++)
+        for (int j = 0; j < callbacks->size(); j++)
         {
             lfCoordCallbackData *cd = (lfCoordCallbackData *)callbacks->at(j);
             cd->callback (cd->data, res, 1);
@@ -169,7 +169,7 @@ float lfModifier::GetTransformedDistance (lfPoint point) const
 
         // Compute approximative function prime in (x,y)
         res [0] = ca * (ru + dx); res [1] = sa * (ru + dx);
-        for (int j = 0; j < callbacks->size; j++)
+        for (int j = 0; j < callbacks->size(); j++)
         {
             lfCoordCallbackData *cd = (lfCoordCallbackData *)callbacks->at(j);
             cd->callback (cd->data, res, 1);
@@ -197,11 +197,11 @@ float lfModifier::GetAutoScale (bool reverse)
 {
     // Compute the scale factor automatically
         std::vector<lfCallbackData*>* spCallbacks = (std::vector<lfCallbackData*>*)SubpixelCallbacks;
-    const float subpixel_scale = spCallbacks->size == 0 ? 1.0 : 1.001;
+    const float subpixel_scale = spCallbacks->size()== 0 ? 1.0 : 1.001;
 
 
     std::vector<lfCallbackData*>* coordCallbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
-    if (coordCallbacks->size == 0)
+    if (coordCallbacks->size()== 0)
         return subpixel_scale;
 
     // 3 2 1
@@ -455,7 +455,7 @@ bool lfModifier::ApplyGeometryDistortion (
     float xu, float yu, int width, int height, float *res) const
 {
     std::vector<lfCallbackData*>* coordCallbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
-    if (coordCallbacks->size <= 0 || height <= 0)
+    if (coordCallbacks->size()<= 0 || height <= 0)
         return false; // nothing to do
 
     // All callbacks work with normalized coordinates
@@ -472,7 +472,7 @@ bool lfModifier::ApplyGeometryDistortion (
             res [i * 2 + 1] = y;
         }
 
-        for (i = 0; i < coordCallbacks->size; i++)
+        for (i = 0; i < coordCallbacks->size(); i++)
         {
             lfCoordCallbackData *cd = (lfCoordCallbackData *)coordCallbacks->at(i);
             cd->callback (cd->data, res, width);

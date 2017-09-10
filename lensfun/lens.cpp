@@ -8,12 +8,12 @@
 #include "lensfunprv.h"
 #include <limits.h>
 #include <stdlib.h>
-#include "../../include/regex/regex.h"
 #include <string.h>
 #include <locale.h>
 #include <math.h>
 #include "windows/mathconstants.h"
 #include <algorithm>
+#include <regex.h>
 
 typedef unsigned char guchar;
 

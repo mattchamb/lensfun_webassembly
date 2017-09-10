@@ -85,7 +85,7 @@ bool lfModifier::ApplySubpixelDistortion (
     float xu, float yu, int width, int height, float *res) const
 {
     std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)SubpixelCallbacks;
-    if (callbacks->size <= 0 || height <= 0)
+    if (callbacks->size() <= 0 || height <= 0)
         return false; // nothing to do
 
     // All callbacks work with normalized coordinates
@@ -104,7 +104,7 @@ bool lfModifier::ApplySubpixelDistortion (
             out += 6;
         }
 
-        for (i = 0; i < callbacks->size->len; i++)
+        for (i = 0; i < callbacks->size(); i++)
         {
             lfSubpixelCallbackData *cd =
                 (lfSubpixelCallbackData *)callbacks->at(i);
@@ -130,7 +130,7 @@ bool lfModifier::ApplySubpixelGeometryDistortion (
     std::vector<lfCallbackData*>* spCallbacks = (std::vector<lfCallbackData*>*)SubpixelCallbacks;
     std::vector<lfCallbackData*>* coordCallbacks = (std::vector<lfCallbackData*>*)CoordCallbacks;
     
-    if ((spCallbacks->size <= 0 && coordCallbacks->size <= 0) || height <= 0)
+    if ((spCallbacks->size() <= 0 && coordCallbacks->size() <= 0) || height <= 0)
         return false; // nothing to do
 
     // All callbacks work with normalized coordinates
@@ -149,14 +149,14 @@ bool lfModifier::ApplySubpixelGeometryDistortion (
             out += 6;
         }
 
-        for (i = 0; i < coordCallbacks->size; i++)
+        for (i = 0; i < coordCallbacks->size(); i++)
         {
             lfCoordCallbackData *cd =
                 (lfCoordCallbackData *)coordCallbacks->at(i);
             cd->callback (cd->data, res, width * 3);
         }
 
-        for (i = 0; i < spCallbacks->size; i++)
+        for (i = 0; i < spCallbacks->size(); i++)
         {
             lfSubpixelCallbackData *cd =
                 (lfSubpixelCallbackData *)spCallbacks->at(i);

@@ -119,7 +119,7 @@ bool lfModifier::ApplyColorModification (
     void *pixels, float x, float y, int width, int height, int comp_role, int row_stride) const
 {
     std::vector<lfCallbackData*>* callbacks = (std::vector<lfCallbackData*>*)ColorCallbacks;
-    if (callbacks->size <= 0 || height <= 0)
+    if (callbacks->size() <= 0 || height <= 0)
         return false; // nothing to do
 
     x = x * NormScale - CenterX;
@@ -127,7 +127,7 @@ bool lfModifier::ApplyColorModification (
 
     for (; height; y += NormScale, height--)
     {
-        for (int i = 0; i < callbacks->size; i++)
+        for (int i = 0; i < callbacks->size(); i++)
         {
             lfColorCallbackData *cd = (lfColorCallbackData*)callbacks->at(i);
             cd->callback (cd->data, x, y, pixels, comp_role, width);

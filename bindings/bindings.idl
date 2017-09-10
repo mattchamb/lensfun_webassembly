@@ -1,0 +1,143 @@
+interface lfMount
+{
+    void lfMount();
+    void SetName([Const] DOMString val, [Const] DOMString lang);
+    void AddCompat([Const] DOMString val);
+    boolean Check();
+};
+
+interface lfCamera
+{
+    void lfCamera();
+    void SetMaker([Const] DOMString val, [Const] DOMString lang);
+    void SetModel([Const] DOMString val, [Const] DOMString lang);
+    void SetVariant([Const] DOMString val, [Const] DOMString lang);
+    void SetMount([Const] DOMString val);
+    boolean Check();
+};
+
+interface lfLens
+{
+    attribute DOMString Maker;
+    attribute DOMString Model;
+    attribute float MinFocal;
+    attribute float MaxFocal;
+    attribute float MinAperture;
+    attribute float MaxAperture;
+    attribute DOMString[] Mounts;
+    attribute float CenterX;
+    attribute float CenterY;
+    attribute float CropFactor;
+    attribute float AspectRatio;
+    
+
+    void lfLens();
+    void AddCalibDistortion ([Const] lfLensCalibDistortion dc);
+    void AddCalibTCA ([Const] lfLensCalibTCA tcac);
+    void AddCalibVignetting ([Const] lfLensCalibVignetting vc);
+    void AddCalibCrop ([Const] lfLensCalibCrop cc);
+    void AddCalibFov ([Const] lfLensCalibFov cf);
+    void GuessParameters();
+    boolean Check();    
+};
+
+interface lfLensCalibFov
+{
+    attribute float Focal;
+    attribute float FieldOfView;
+};
+
+enum lfCropMode 
+{
+    "LF_NO_CROP",
+    "LF_CROP_RECTANGLE",
+    "LF_CROP_CIRCLE"
+};
+
+interface lfLensCalibCrop
+{
+    attribute float Focal;
+    attribute lfCropMode CropMode;
+    attribute float[] Crop;
+};
+
+interface lfLensCalibTCA
+{
+    attribute lfTCAModel Model;
+    attribute float Focal;
+    attribute float[] Terms;
+};
+
+enum lfTCAModel
+{
+    "LF_TCA_MODEL_NONE",
+    "LF_TCA_MODEL_LINEAR",
+    "LF_TCA_MODEL_POLY3",
+    "LF_TCA_MODEL_ACM"
+};
+
+interface lfLensCalibVignetting
+{
+    attribute lfVignettingModel Model;
+    attribute float Focal;
+    attribute float Aperture;
+    attribute float Distance;
+    attribute float[] Terms;
+};
+
+enum lfVignettingModel
+{
+    "LF_VIGNETTING_MODEL_NONE",
+    "LF_VIGNETTING_MODEL_PA",
+    "LF_VIGNETTING_MODEL_ACM"
+};
+
+interface lfModifier
+{
+    void lfModifier([Const] lfLens lens, float crop, long width, long height);
+    long Initialize([Const] lfLens lens, lfPixelFormat format, float focal, float aperture, float distance, float scale, lfLensType targeom, long flags, boolean reverse);
+    [Const] boolean ApplyColorModification(VoidPtr pixels, float x, float y, long width, long height, long comp_role, long row_stride);
+    [Const] boolean ApplyGeometryDistortion (float xu, float yu, long width, long height, float[] res);
+    [Const] boolean ApplySubpixelDistortion (float xu, float yu, long width, long height, float[] res);
+    [Const] boolean ApplySubpixelGeometryDistortion (float xu, float yu, long width, long height, float[] res);
+};
+
+interface lfLensCalibDistortion
+{
+    attribute lfDistortionModel Model;
+    attribute float Focal;
+    attribute float RealFocal;
+    attribute long RealFocalMeasured;
+    attribute float[] Terms;
+};
+
+enum lfDistortionModel
+{
+    "LF_DIST_MODEL_NONE",
+    "LF_DIST_MODEL_POLY3",
+    "LF_DIST_MODEL_POLY5",
+    "LF_DIST_MODEL_PTLENS",
+    "LF_DIST_MODEL_ACM"
+};
+
+enum lfPixelFormat
+{
+    "LF_PF_U8",
+    "LF_PF_U16",
+    "LF_PF_U32",
+    "LF_PF_F32",
+    "LF_PF_F64"
+};
+
+enum lfLensType
+{
+    "LF_UNKNOWN",
+    "LF_RECTILINEAR",
+    "LF_FISHEYE",
+    "LF_PANORAMIC",
+    "LF_EQUIRECTANGULAR",
+    "LF_FISHEYE_ORTHOGRAPHIC",
+    "LF_FISHEYE_STEREOGRAPHIC",
+    "LF_FISHEYE_EQUISOLID",
+    "LF_FISHEYE_THOBY"
+};
